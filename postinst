@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+# Reload systemd, enable, and start the service
+systemctl daemon-reload
+systemctl enable accel-sensor-bridge.service
+systemctl start accel-sensor-bridge.service

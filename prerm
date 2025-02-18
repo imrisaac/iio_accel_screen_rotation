@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+# Stop and disable the service before removing
+systemctl stop accel-sensor-brige.service || true
+systemctl disable accel-sensor-brige.service || true

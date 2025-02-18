@@ -1,0 +1,8 @@
+Package: accel-sensor-bridge
+Version: 1.0-1
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Isaac imrisaac@gmail.com
+Depends: python3, python3-systemd, python3-smbus, python3-serial, python3-pyudev
+Description: A proxy service for accel sensors. This package installs the accel_sensor_bridge.py script and its associated systemd service.
