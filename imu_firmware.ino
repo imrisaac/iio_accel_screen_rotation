@@ -2,7 +2,6 @@
 #include <SparkFun_LIS2DH12.h>
 
 SPARKFUN_LIS2DH12 accel0;  // Create instance
-SPARKFUN_LIS2DH12 accel1;
 
 // Define the moving average filter size (larger size for smoother output)
 #define FILTER_SIZE 20
@@ -11,10 +10,6 @@ SPARKFUN_LIS2DH12 accel1;
 float x_buffer[FILTER_SIZE] = {0};
 float y_buffer[FILTER_SIZE] = {0};
 float z_buffer[FILTER_SIZE] = {0};
-
-float x_buffer1[FILTER_SIZE] = {0};
-float y_buffer1[FILTER_SIZE] = {0};
-float z_buffer1[FILTER_SIZE] = {0};
 
 // Indices for circular buffer
 int buffer_index = 0;
@@ -29,10 +24,6 @@ void setup() {
     Serial.println("Accelerometer 0 not detected. Check wiring.");
   }
 
-  if (accel1.begin(0x19) == false) {
-    Serial.println("Accelerometer 1 not detected. Check wiring.");
-  }
-
   // Initialize buffer with first readings to avoid initial spikes
   if (accel0.available()) {
     float raw_x = accel0.getX();
@@ -45,17 +36,6 @@ void setup() {
     }
   }
 
-  if (accel1.available()) {
-    float raw_x = accel1.getX();
-    float raw_y = accel1.getY();
-    float raw_z = accel1.getZ();
-
-    for (int i = 0; i < FILTER_SIZE; i++) {
-      x_buffer1[i] = raw_x;
-      y_buffer1[i] = raw_y;
-      z_buffer1[i] = raw_z;
-    }
-  }
 }
 
 // Function to compute moving average
@@ -94,6 +74,6 @@ void loop() {
     Serial.print(", ");
     Serial.println(filtered_z, 1);
 
-    delay(50); // Adjust for desired sampling rate
+    delay(100); // Adjust for desired sampling rate
   }
 }

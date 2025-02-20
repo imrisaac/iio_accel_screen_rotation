@@ -6,24 +6,24 @@ from evdev import UInput, ecodes, AbsInfo
 IMU_VID = '1b4f'
 IMU_PID = '9204'
 CONFIGURED_AXIS = 'y'
+DEBUG = False
 
 STATE_LANDSCAPE = "LANDSCAPE"
 STATE_LEFT_ROTATION = "LEFT_ROTATION"
 STATE_RIGHT_ROTATION = "RIGHT_ROTATION"
 
-# IMU rotation states
+# IMU rotation states range the configured axis must be within to trigger transition to STATE_
 STATE_RANGES = {
     STATE_LANDSCAPE: (-100, 100),         
     STATE_LEFT_ROTATION: (800, float("inf")), 
     STATE_RIGHT_ROTATION: (-float("inf"), -800),  
 }
 
-# Display states
+# Display states iio sensor values that corespond to display rotations
 DISPLAY_ROTATION_STATE_PORTRAIT_RIGHT = (1000, 0, 0)
 DISPLAY_ROTATION_STATE_PORTRAIT_LEFT = (-1000, 0, 0)
 DISPLAY_ROTATION_STATE_LANDSCAPE = (0, -1000, 0)
 DISPLAY_ROTATION_STATE_LANDSCAPE_INVERTED = (0, 1000, 0)
-
 
 # accelerometer event types
 capabilities = {
@@ -94,7 +94,9 @@ def main():
             # Parse accelerometer data
             accel_x, accel_y, accel_z = map(float, line.split(","))
             accel_data = {'x': accel_x, 'y': accel_y, 'z': accel_z}
-            print(f"Accel: X={accel_x}, Y={accel_y}, Z={accel_z}")
+
+            if(DEBUG):
+                print(f"Accel: X={accel_x}, Y={accel_y}, Z={accel_z}")
 
             # Determine the current state using the configured axis
             current_state = determine_accel_state(accel_data, CONFIGURED_AXIS)
@@ -103,13 +105,13 @@ def main():
             if current_state and current_state != previous_state:
                 if current_state == STATE_LANDSCAPE:
                     send_rotation(*DISPLAY_ROTATION_STATE_LANDSCAPE)
-                    print("Landscape")
+                    print("Landscape Normal")
                 elif current_state == STATE_LEFT_ROTATION:
                     send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_LEFT)
-                    print("Left")
+                    print("Left Rotation")
                 elif current_state == STATE_RIGHT_ROTATION:
                     send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_RIGHT)
-                    print("Right")
+                    print("Right Rotation")
                 previous_state = current_state
 
 
