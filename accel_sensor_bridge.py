@@ -7,20 +7,25 @@ IMU_VID = '1b4f'
 IMU_PID = '9204'
 CONFIGURED_AXIS = 'y'
 
-# Defining IMU rotation states
-IMU_ROTATION_STATE_LANDSCAPE = (-100, 100)
-IMU_ROTATION_STATE_LEFT_ROTATION = (800, float("inf"))
-IMU_ROTATION_STATE_RIGHT_ROTATION = (-float("inf"), -800)
+STATE_LANDSCAPE = "LANDSCAPE"
+STATE_LEFT_ROTATION = "LEFT_ROTATION"
+STATE_RIGHT_ROTATION = "RIGHT_ROTATION"
 
+# IMU rotation states
+STATE_RANGES = {
+    STATE_LANDSCAPE: (-100, 100),         
+    STATE_LEFT_ROTATION: (800, float("inf")), 
+    STATE_RIGHT_ROTATION: (-float("inf"), -800),  
+}
 
-# Defing Display states
+# Display states
 DISPLAY_ROTATION_STATE_PORTRAIT_RIGHT = (1000, 0, 0)
 DISPLAY_ROTATION_STATE_PORTRAIT_LEFT = (-1000, 0, 0)
 DISPLAY_ROTATION_STATE_LANDSCAPE = (0, -1000, 0)
 DISPLAY_ROTATION_STATE_LANDSCAPE_INVERTED = (0, 1000, 0)
 
 
-# Define accelerometer event types
+# accelerometer event types
 capabilities = {
     ecodes.EV_ABS: [
         (ecodes.ABS_X, AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=1)),
@@ -32,19 +37,15 @@ capabilities = {
 # Create a virtual input device
 ui = UInput(capabilities, name="Virtual Accelerometer", version=0x3)
 
-def check_rotation_state(accel_x, accel_y, accel_z):
-    # Calculate rotation or orientation state based on your criteria
-    # Example: you can use accel_x, accel_y, or accel_z to determine the state
+def in_range(value, range_tuple):
+    return range_tuple[0] <= value <= range_tuple[1]
 
-    if IMU_ROTATION_STATE_LANDSCAPE[0] <= accel_x <= IMU_ROTATION_STATE_LANDSCAPE[1]:
-        return "Landscape"
-    elif IMU_ROTATION_STATE_LEFT_ROTATION[0] <= accel_x <= IMU_ROTATION_STATE_LEFT_ROTATION[1]:
-        return "Left Rotation"
-    elif IMU_ROTATION_STATE_RIGHT_ROTATION[0] <= accel_x <= IMU_ROTATION_STATE_RIGHT_ROTATION[1]:
-        return "Right Rotation"
-    else:
-        return "Unknown State"
-
+def determine_accel_state(accel_data, axis):
+    value = accel_data[axis]
+    for state, range_config in STATE_RANGES.items():
+        if in_range(value, range_config):
+            return state
+    return None
 
 def send_rotation(x, y, z):
     ui.write(ecodes.EV_ABS, ecodes.ABS_X, x)
@@ -68,7 +69,6 @@ def main():
         print("IMU device not found")
         return
 
-
     if not ui:
         print("Failed to create virtual accelerometer")
         return
@@ -81,6 +81,8 @@ def main():
     print("Monitoring accelerometer data for state transitions")
     print("Configured axis:", CONFIGURED_AXIS)
 
+    current_state = None
+    previous_state = None
 
     try:
         while True:
@@ -94,20 +96,21 @@ def main():
             accel_data = {'x': accel_x, 'y': accel_y, 'z': accel_z}
             print(f"Accel: X={accel_x}, Y={accel_y}, Z={accel_z}")
 
+            # Determine the current state using the configured axis
+            current_state = determine_accel_state(accel_data, CONFIGURED_AXIS)
 
-            rotation_state = check_rotation_state(accel_x, accel_y, accel_z)
-            print("IMU Rotation State:", rotation_state)
-
-            if rotation_state == "Landscape":
-                send_rotation(*DISPLAY_ROTATION_STATE_LANDSCAPE)
-            elif rotation_state == "Left Rotation":
-                send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_LEFT)
-            elif rotation_state == "Right Rotation":
-                send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_RIGHT)
-            elif rotation_state ==  "Landscape Inverted":
-                send_rotation(*DISPLAY_ROTATION_STATE_LANDSCAPE_INVERTED)
-            else:
-                print("Unknown State")
+            # Check for state transition
+            if current_state and current_state != previous_state:
+                if current_state == STATE_LANDSCAPE:
+                    send_rotation(*DISPLAY_ROTATION_STATE_LANDSCAPE)
+                    print("Landscape")
+                elif current_state == STATE_LEFT_ROTATION:
+                    send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_LEFT)
+                    print("Left")
+                elif current_state == STATE_RIGHT_ROTATION:
+                    send_rotation(*DISPLAY_ROTATION_STATE_PORTRAIT_RIGHT)
+                    print("Right")
+                previous_state = current_state
 
 
     except KeyboardInterrupt:
