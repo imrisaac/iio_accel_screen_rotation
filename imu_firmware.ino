@@ -1,7 +1,8 @@
 #include <Wire.h>
 #include <SparkFun_LIS2DH12.h>
 
-SPARKFUN_LIS2DH12 accel;  // Create instance
+SPARKFUN_LIS2DH12 accel0;  // Create instance
+SPARKFUN_LIS2DH12 accel1;
 
 // Define the moving average filter size (larger size for smoother output)
 #define FILTER_SIZE 20
@@ -11,27 +12,48 @@ float x_buffer[FILTER_SIZE] = {0};
 float y_buffer[FILTER_SIZE] = {0};
 float z_buffer[FILTER_SIZE] = {0};
 
+float x_buffer1[FILTER_SIZE] = {0};
+float y_buffer1[FILTER_SIZE] = {0};
+float z_buffer1[FILTER_SIZE] = {0};
+
 // Indices for circular buffer
 int buffer_index = 0;
 
 void setup() {
   Serial.begin(115200);
+  delay(3000);
+  Serial.println("Begin i2c");
   Wire.begin();
 
-  if (accel.begin() == false) {
-    Serial.println("Accelerometer not detected. Check wiring.");
-    while (1);
+  if (accel0.begin(0x18) == false) {
+    Serial.println("Accelerometer 0 not detected. Check wiring.");
+  }
+
+  if (accel1.begin(0x19) == false) {
+    Serial.println("Accelerometer 1 not detected. Check wiring.");
   }
 
   // Initialize buffer with first readings to avoid initial spikes
-  if (accel.available()) {
-    float raw_x = accel.getX();
-    float raw_y = accel.getY();
-    float raw_z = accel.getZ();
+  if (accel0.available()) {
+    float raw_x = accel0.getX();
+    float raw_y = accel0.getY();
+    float raw_z = accel0.getZ();
     for (int i = 0; i < FILTER_SIZE; i++) {
       x_buffer[i] = raw_x;
       y_buffer[i] = raw_y;
       z_buffer[i] = raw_z;
+    }
+  }
+
+  if (accel1.available()) {
+    float raw_x = accel1.getX();
+    float raw_y = accel1.getY();
+    float raw_z = accel1.getZ();
+
+    for (int i = 0; i < FILTER_SIZE; i++) {
+      x_buffer1[i] = raw_x;
+      y_buffer1[i] = raw_y;
+      z_buffer1[i] = raw_z;
     }
   }
 }
@@ -46,11 +68,11 @@ float compute_average(float *buffer, int size) {
 }
 
 void loop() {
-  if (accel.available()) {
+  if (accel0.available()) {
     // Read raw data
-    float raw_x = accel.getX();
-    float raw_y = accel.getY();
-    float raw_z = accel.getZ();
+    float raw_x = accel0.getX();
+    float raw_y = accel0.getY();
+    float raw_z = accel0.getZ();
 
     // Update buffers
     x_buffer[buffer_index] = raw_x;
@@ -66,13 +88,11 @@ void loop() {
     buffer_index = (buffer_index + 1) % FILTER_SIZE;
 
     // Print filtered data
-    Serial.print("Filtered Accel: ");
     Serial.print(filtered_x, 1);
-    Serial.print(" x, ");
+    Serial.print(", ");
     Serial.print(filtered_y, 1);
-    Serial.print(" y, ");
-    Serial.print(filtered_z, 1);
-    Serial.println(" z");
+    Serial.print(", ");
+    Serial.println(filtered_z, 1);
 
     delay(50); // Adjust for desired sampling rate
   }
