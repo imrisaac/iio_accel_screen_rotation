@@ -6,7 +6,6 @@ After=network.target
 ExecStart=/usr/local/bin/accel_sensor_bridge.py
 Restart=on-failure
 RestartSec=30s
-StartLimitIntervalSec=60
 StartLimitBurst=2
 
 User=root
